@@ -1,6 +1,13 @@
 import cv2
 import numpy as np
 import mediapipe as mp
+import joblib
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import confusion_matrix, accuracy_score
+from matplotlib.colors import ListedColormap
+from sklearn.preprocessing import LabelEncoder
 import pandas as pd
 from mediapipe.python.solutions import pose as mp_pose
 
@@ -313,13 +320,14 @@ class FullBodyPoseEmbedder(object):
 
       return np.degrees(angle)
 
+randomForestClassifier = joblib.load("./random_forest.joblib")
 
 # Set up MediaPipe Pose.
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
 # Video capture setup
-cap = cv2.VideoCapture('pushup (1).mp4')
+cap = cv2.VideoCapture('Squat_Assessment (1).mp4')
 frame_width, frame_height = int(cap.get(3)), int(cap.get(4))
 frame_rate = int(cap.get(cv2.CAP_PROP_FPS))
 out = cv2.VideoWriter('output_video.mp4', cv2.VideoWriter_fourcc(*'mp4v'), frame_rate, (frame_width, frame_height))
@@ -352,6 +360,13 @@ while cap.isOpened():
         if pose_landmarks.shape == (33, 3):  # Ensure correct landmarks shape
             landmarks, distance_embedding, distance3D_embedding, angle_embedding = pose_embedder(pose_landmarks)  # Optional: print or handle the embeddings
             print("distance3D",distance3D_embedding,"\n","angle", angle_embedding)
+            features=np.concatenate((distance3D_embedding,angle_embedding),axis=0)
+            print("features.length",features.size)
+            features=np.reshape(features,(1,features.size))
+            print("features", features)
+            label=randomForestClassifier.predict(features)
+            print("label",label)
+
 
 
     # Write the frame to the output video
