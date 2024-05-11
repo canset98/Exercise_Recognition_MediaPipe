@@ -11,9 +11,9 @@ import os
 
 """# Read And Merge"""
 
-labels = pd.read_csv(r'C:\Users\Ranim\Desktop\Bahar dönemi 2024\BİTİRME\Makaleler\Dataset\archive\labels.csv')
-distances = pd.read_csv(r'C:\Users\Ranim\Desktop\Bahar dönemi 2024\BİTİRME\Makaleler\Dataset\archive\3d_distances.csv')
-angles = pd.read_csv(r'C:\Users\Ranim\Desktop\Bahar dönemi 2024\BİTİRME\Makaleler\Dataset\archive\angles.csv')
+labels = pd.read_csv('labels.csv')
+distances = pd.read_csv('3d_distances.csv')
+angles = pd.read_csv('angles.csv')
 
 features = pd.merge(distances, angles, on="pose_id")
 all_data = pd.merge(labels, features, on="pose_id")
@@ -26,36 +26,30 @@ for column in columns_to_remove:
 all_data.to_csv(r'C:\Users\Ranim\Desktop\Bahar dönemi 2024\BİTİRME\Makaleler\Dataset\archive\all_data.csv',index=False)
 #inputs as numpy array
 X = all_data.drop(['pose','pose_id'],axis=1).values
-print(X)
+
 y = all_data['pose'].values
-print(y)
+
 
 # Encoding
 le = LabelEncoder()
 y = le.fit_transform(y)
 
-y
-
 # Splitting
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=0)
 
-print(X_train)
 
-print(y_train)
 
 # Scalling
 
-scaler = MinMaxScaler(feature_range = (-1,1))
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.transform(X_test)
-
-print(X_train)
+#scaler = MinMaxScaler(feature_range = (-1,1))
+#X_train = scaler.fit_transform(X_train)
+#X_test = scaler.transform(X_test)
 
 # Training
 
 from sklearn.ensemble import RandomForestClassifier
-classifier = RandomForestClassifier(n_estimators = 100, criterion = 'entropy', random_state = 0)
+classifier = RandomForestClassifier(n_estimators = 300, criterion = 'entropy', random_state = 0)
 classifier.fit(X_train, y_train)
 
 # Prediction
