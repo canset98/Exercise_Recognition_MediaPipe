@@ -9,6 +9,7 @@ from sklearn.metrics import confusion_matrix, accuracy_score
 from matplotlib.colors import ListedColormap
 from sklearn.preprocessing import LabelEncoder
 import pandas as pd
+from collections import deque, Counter
 from mediapipe.python.solutions import pose as mp_pose
 
 
@@ -320,19 +321,49 @@ class FullBodyPoseEmbedder(object):
 
       return np.degrees(angle)
 
+# Load models
 randomForestClassifier = joblib.load("./random_forest.joblib")
+label_encoder = joblib.load("./label_encoder.joblib")
 
 # Set up MediaPipe Pose.
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
 # Video capture setup
-cap = cv2.VideoCapture('Squat_Assessment (1).mp4')
+cap = cv2.VideoCapture('Jumping Jack Nasıl Yapılır_.mp4')
 frame_width, frame_height = int(cap.get(3)), int(cap.get(4))
 frame_rate = int(cap.get(cv2.CAP_PROP_FPS))
 out = cv2.VideoWriter('output_video.mp4', cv2.VideoWriter_fourcc(*'mp4v'), frame_rate, (frame_width, frame_height))
 
-pose_embedder = FullBodyPoseEmbedder()  # Initialize your pose embedder
+pose_embedder = FullBodyPoseEmbedder()
+
+# Initialize counters and statuses for each exercise
+counters = {
+    'pushups': 0,
+    'jumping_jacks': 0,
+    'pullups': 0,
+    'situps': 0,
+    'squats': 0
+}
+statuses = {
+    'pushups': '',
+    'jumping_jacks': '',
+    'pullups': '',
+    'situps': '',
+    'squats': ''
+}
+
+# Initialize deque for label smoothing
+label_window = deque(maxlen=5)
+
+# Function to update counters and statuses
+def update_counter(label_str, last_status, count, up_label, down_label):
+    if label_str == up_label:
+        last_status = "up"
+    if label_str == down_label and last_status == "up":
+        last_status = "down"
+        count += 1
+    return last_status, count
 
 # Read and process the video
 while cap.isOpened():
@@ -358,16 +389,39 @@ while cap.isOpened():
 
         # Process landmarks through the embedder
         if pose_landmarks.shape == (33, 3):  # Ensure correct landmarks shape
-            landmarks, distance_embedding, distance3D_embedding, angle_embedding = pose_embedder(pose_landmarks)  # Optional: print or handle the embeddings
-            print("distance3D",distance3D_embedding,"\n","angle", angle_embedding)
-            features=np.concatenate((distance3D_embedding,angle_embedding),axis=0)
-            print("features.length",features.size)
-            features=np.reshape(features,(1,features.size))
-            print("features", features)
-            label=randomForestClassifier.predict(features)
-            print("label",label)
+            landmarks, distance_embedding, distance3D_embedding, angle_embedding = pose_embedder(pose_landmarks)
+            features = np.concatenate((distance3D_embedding, angle_embedding), axis=0)
+            features = np.reshape(features, (1, features.size))
 
+            # Predict label
+            label_numeric = randomForestClassifier.predict(features)
+            label_str = label_encoder.inverse_transform(label_numeric)[0]  # Convert numeric label to string
 
+            # Add label to deque for smoothing
+            label_window.append(label_str)
+            most_common_label = Counter(label_window).most_common(1)[0][0]
+
+            # Display label on the video
+            cv2.putText(frame, most_common_label, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
+
+            # Update counters and statuses for each exercise
+            statuses['pushups'], counters['pushups'] = update_counter(most_common_label, statuses['pushups'], counters['pushups'], "pushups_up", "pushups_down")
+            statuses['jumping_jacks'], counters['jumping_jacks'] = update_counter(most_common_label, statuses['jumping_jacks'], counters['jumping_jacks'], "jumping_jacks_up", "jumping_jacks_down")
+            statuses['pullups'], counters['pullups'] = update_counter(most_common_label, statuses['pullups'], counters['pullups'], "pullups_up", "pullups_down")
+            statuses['situps'], counters['situps'] = update_counter(most_common_label, statuses['situps'], counters['situps'], "situp_up", "situp_down")
+            statuses['squats'], counters['squats'] = update_counter(most_common_label, statuses['squats'], counters['squats'], "squats_up", "squats_down")
+
+            # Display the counter for the current exercise only
+            if most_common_label in ["pushups_up", "pushups_down"]:
+                cv2.putText(frame, f"Push-ups: {counters['pushups']}", (frame_width - 1200, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+            elif most_common_label in ["jumping_jacks_up", "jumping_jacks_down"]:
+                cv2.putText(frame, f"Jumping Jacks: {counters['jumping_jacks']}", (frame_width - 1200, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+            elif most_common_label in ["pullups_up", "pullups_down"]:
+                cv2.putText(frame, f"Pull-ups: {counters['pullups']}", (frame_width - 1200, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+            elif most_common_label in ["situp_up", "situp_down"]:
+                cv2.putText(frame, f"Sit-ups: {counters['situps']}", (frame_width - 1200, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+            elif most_common_label in ["squats_up", "squats_down"]:
+                cv2.putText(frame, f"Squats: {counters['squats']}", (frame_width - 1200, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
 
     # Write the frame to the output video
     out.write(frame)
