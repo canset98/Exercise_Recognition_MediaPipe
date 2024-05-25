@@ -330,7 +330,7 @@ mp_pose = mp.solutions.pose
 pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
 # Video capture setup
-cap = cv2.VideoCapture('Jumping Jack Nasıl Yapılır_.mp4')
+cap = cv2.VideoCapture('The Pull-Up.mp4')
 frame_width, frame_height = int(cap.get(3)), int(cap.get(4))
 frame_rate = int(cap.get(cv2.CAP_PROP_FPS))
 out = cv2.VideoWriter('output_video.mp4', cv2.VideoWriter_fourcc(*'mp4v'), frame_rate, (frame_width, frame_height))
@@ -354,7 +354,7 @@ statuses = {
 }
 
 # Initialize deque for label smoothing
-label_window = deque(maxlen=10)
+label_window = deque(maxlen=35)
 
 # Function to update counters and statuses
 def update_counter(label_str, last_status, count, up_label, down_label):

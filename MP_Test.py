@@ -330,7 +330,7 @@ mp_pose = mp.solutions.pose
 pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
 # Video capture setup
-cap = cv2.VideoCapture('Jumping Jack Nasıl Yapılır_.mp4')
+cap = cv2.VideoCapture('Jumping Jack Nasıl Yapılır_.mp4')  # Change this to the appropriate video file for testing
 frame_width, frame_height = int(cap.get(3)), int(cap.get(4))
 frame_rate = int(cap.get(cv2.CAP_PROP_FPS))
 out = cv2.VideoWriter('output_video.mp4', cv2.VideoWriter_fourcc(*'mp4v'), frame_rate, (frame_width, frame_height))
@@ -393,35 +393,48 @@ while cap.isOpened():
             features = np.concatenate((distance3D_embedding, angle_embedding), axis=0)
             features = np.reshape(features, (1, features.size))
 
-            # Predict label
-            label_numeric = randomForestClassifier.predict(features)
-            label_str = label_encoder.inverse_transform(label_numeric)[0]  # Convert numeric label to string
+            # Predict label with probability
+            label_probs = randomForestClassifier.predict_proba(features)
+            label_numeric = label_probs.argmax(axis=1)
+            confidence_score = label_probs.max(axis=1)[0]
 
-            # Add label to deque for smoothing
-            label_window.append(label_str)
-            most_common_label = Counter(label_window).most_common(1)[0][0]
+            # Initialize label_str to handle cases where confidence is low
+            label_str = ""
 
-            # Display label on the video
-            cv2.putText(frame, most_common_label, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
+            # Only update if confidence score is above threshold
+            confidence_threshold = 0.5  # Lowered the threshold
+            if confidence_score >= confidence_threshold:
+                label_str = label_encoder.inverse_transform(label_numeric)[0]  # Convert numeric label to string
 
-            # Update counters and statuses for each exercise
-            statuses['pushups'], counters['pushups'] = update_counter(most_common_label, statuses['pushups'], counters['pushups'], "pushups_up", "pushups_down")
-            statuses['jumping_jacks'], counters['jumping_jacks'] = update_counter(most_common_label, statuses['jumping_jacks'], counters['jumping_jacks'], "jumping_jacks_up", "jumping_jacks_down")
-            statuses['pullups'], counters['pullups'] = update_counter(most_common_label, statuses['pullups'], counters['pullups'], "pullups_up", "pullups_down")
-            statuses['situps'], counters['situps'] = update_counter(most_common_label, statuses['situps'], counters['situps'], "situp_up", "situp_down")
-            statuses['squats'], counters['squats'] = update_counter(most_common_label, statuses['squats'], counters['squats'], "squats_up", "squats_down")
+                # Add label to deque for smoothing only if it's not empty
+                if label_str:
+                    label_window.append(label_str)
+                    most_common_label = Counter(label_window).most_common(1)[0][0]
 
-            # Display the counter for the current exercise only
-            if most_common_label in ["pushups_up", "pushups_down"]:
-                cv2.putText(frame, f"Push-ups: {counters['pushups']}", (frame_width - 1200, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
-            elif most_common_label in ["jumping_jacks_up", "jumping_jacks_down"]:
-                cv2.putText(frame, f"Jumping Jacks: {counters['jumping_jacks']}", (frame_width - 1200, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
-            elif most_common_label in ["pullups_up", "pullups_down"]:
-                cv2.putText(frame, f"Pull-ups: {counters['pullups']}", (frame_width - 1200, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
-            elif most_common_label in ["situp_up", "situp_down"]:
-                cv2.putText(frame, f"Sit-ups: {counters['situps']}", (frame_width - 1200, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
-            elif most_common_label in ["squats_up", "squats_down"]:
-                cv2.putText(frame, f"Squats: {counters['squats']}", (frame_width - 1200, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+                    # Display label on the video
+                    cv2.putText(frame, most_common_label, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
+
+                    # Update counters and statuses for each exercise
+                    statuses['pushups'], counters['pushups'] = update_counter(most_common_label, statuses['pushups'], counters['pushups'], "pushups_up", "pushups_down")
+                    statuses['jumping_jacks'], counters['jumping_jacks'] = update_counter(most_common_label, statuses['jumping_jacks'], counters['jumping_jacks'], "jumping_jacks_up", "jumping_jacks_down")
+                    statuses['pullups'], counters['pullups'] = update_counter(most_common_label, statuses['pullups'], counters['pullups'], "pullups_up", "pullups_down")
+                    statuses['situps'], counters['situps'] = update_counter(most_common_label, statuses['situps'], counters['situps'], "situp_up", "situp_down")
+                    statuses['squats'], counters['squats'] = update_counter(most_common_label, statuses['squats'], counters['squats'], "squats_up", "squats_down")
+
+                    # Display the counter for the current exercise only
+                    if most_common_label in ["pushups_up", "pushups_down"]:
+                        cv2.putText(frame, f"Push-ups: {counters['pushups']}", (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+                    elif most_common_label in ["jumping_jacks_up", "jumping_jacks_down"]:
+                        cv2.putText(frame, f"Jumping Jacks: {counters['jumping_jacks']}", (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+                    elif most_common_label in ["pullups_up", "pullups_down"]:
+                        cv2.putText(frame, f"Pull-ups: {counters['pullups']}", (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+                    elif most_common_label in ["situp_up", "situp_down"]:
+                        cv2.putText(frame, f"Sit-ups: {counters['situps']}", (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+                    elif most_common_label in ["squats_up", "squats_down"]:
+                        cv2.putText(frame, f"Squats: {counters['squats']}", (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+            #else:
+            #    # For debugging: show confidence score
+            #    cv2.putText(frame, f"Confidence: {confidence_score:.2f}", (50, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2, cv2.LINE_AA)
 
     # Write the frame to the output video
     out.write(frame)
@@ -435,20 +448,3 @@ while cap.isOpened():
 cap.release()
 out.release()
 cv2.destroyAllWindows()
-
-# Preparing the DataFrame the same way it was prepared for training
-
-# df_distances = pd.DataFrame([distance_embedding], columns=[f'distance_{i}' for i in range(distance_embedding.shape[0])])
-# df_angles = pd.DataFrame([angle_embedding], columns=[f'angle_{i}' for i in range(angle_embedding.shape[0])])
-#
-# # Merge distances and angles into a single feature set
-# ozellik = pd.concat([df_distances, df_angles], axis=1)
-
-
-# Assuming distance_embedding and angle_embedding are 1D numpy arrays from your pose_embedder
-# Reshape them to 2D arrays if they are 1D (common when dealing with single samples)
-# distance3Dnb_embedding = distance3D_embedding.reshape(1, -1)  # Reshape to (1, N) where N is the number of distance features
-#angle_embedding = angle_embedding.reshape(1, -1)        # Reshape to (1, M) where M is the number of angle features
-
-# Concatenate the arrays along axis 1 to form a single feature set
-#newFeature = np.concatenate([distance3Dnb_embedding, angle_embedding], axis=1)
