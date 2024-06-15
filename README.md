@@ -17,10 +17,9 @@ This system aims to improve the quality of sports training by providing accurate
 ## Methods Used
 - Pose detection using MediaPipe Pose.
 - Exercise Recognition using Machine Learning (Random Forest).
-
--  ##DataSet 
-https://www.kaggle.com/datasets/muhannadtuameh/exercise-recognition?resource=download
-
+##DataSet
+- https://www.kaggle.com/datasets/muhannadtuameh/exercise-recognition?resource=download
+  
 - ## Exercise Detection Capabilities
 This project is capable of detecting and monitoring the following exercises (both up and down movements): 
 - Squat
