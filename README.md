@@ -11,7 +11,7 @@ The system is designed to detect and analyze sports exercises, providing real-ti
 - Develop a robust pose detection algorithm.
 - Implement real-time monitoring and feedback.
 - Ensure high accuracy and efficiency.
-- 
+  
 - ## Importance of the Project
 This system aims to improve the quality of sports training by providing accurate real-time feedback, helping athletes and trainers optimize performance.
 ## Methods Used
