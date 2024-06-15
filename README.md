@@ -16,15 +16,15 @@ The system is designed to detect and analyze sports exercises, providing real-ti
 This system aims to improve the quality of sports training by providing accurate real-time feedback, helping athletes and trainers optimize performance.
 ## Methods Used
 - Pose detection using MediaPipe Pose.
-- Real-time processing and feedback using Machine Learning Random Forest.
-- 
+- Exercise Recognition using Machine Learning (Random Forest).
+
 - ## Exercise Detection Capabilities
-This project is capable of detecting and monitoring the following exercises:
+This project is capable of detecting and monitoring the following exercises (both up and down movements): 
 - Squat
 - Pull-up
 - Sit-up
 - Push-up
-- Jumping Jacks (both up and down movements)
+- Jumping Jacks 
 ## Conclusion
 This project successfully demonstrates the feasibility and effectiveness of a real-time sports exercise monitoring system.
 ## Demo
